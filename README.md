@@ -90,6 +90,7 @@ public void sendFinishCaptcha(Player pl) {
 
 #### Installation
 # Install SkiaSharp
+```c#
 dotnet add package SkiaSharp
 ```
 
