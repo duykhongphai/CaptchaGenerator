@@ -7,7 +7,7 @@ A high-performance, thread-safe CAPTCHA generation system with advanced visual o
 ![Java CAPTCHA Demo](Java/demo.png)
 
 ### C# Version  
-![C# CAPTCHA Demo](C#/demo.png)
+![C# CAPTCHA Demo](C%23/demo.png)
 
 *The CAPTCHA features key-value pairs that users must decode by matching characters to their corresponding numbers.*
 
