@@ -17,7 +17,6 @@ A high-performance, thread-safe CAPTCHA generation system with advanced visual o
 - 🔒 **Thread-Safe**: Concurrent session management
 - 🎨 **Advanced Visual Effects**: Distortion, noise, rotation, color variation
 - 🔐 **Security**: Non-predictable key generation with fail-safe mechanisms
-- 🌍 **Cross-Platform**: Windows, Linux, macOS support
 - 📱 **Scalable**: Configurable zoom levels (1x to 4x)
 - 🧠 **Memory Efficient**: Optimized with modern pooling techniques
 - ⚡ **Real-time**: Instant validation and feedback
