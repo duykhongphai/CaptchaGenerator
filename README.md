@@ -144,6 +144,24 @@ public async Task SendFinishCaptchaAsync(IPlayer player)
 
 ## 🎮 Game Integration
 
+### Controller Message Handler
+
+Add this case to your message controller to handle CAPTCHA input:
+
+**Java:**
+```java
+case -85:
+    CaptchaManager.getInstance().handlePlayerCaptchaInput(player, _msg.reader().readChar());
+    break;
+```
+
+**C#:**
+```csharp
+case -85:
+    await CaptchaManager.Instance.HandlePlayerCaptchaInputAsync(player, _msg.Reader.ReadChar());
+    break;
+```
+
 ### Player Login Flow
 
 **Java:**
