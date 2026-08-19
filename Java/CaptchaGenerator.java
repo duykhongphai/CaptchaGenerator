@@ -27,7 +27,7 @@ public class CaptchaGenerator {
     private static final String UPPER_CASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
     private static final String NUMBERS = "0123456789";
-    private static final String SPECIAL_CHARS = "!@#$%&*+=?";
+    private static final String SPECIAL_CHARS = "#@%&$";
     private static final String ALL_CHARS = UPPER_CASE + LOWER_CASE + NUMBERS + SPECIAL_CHARS;
     private static final String SHADOW_CHARS = ".,;:'\"!?@#$%^&*()_+-=[]{}|\\";
     private static final Color[] BRIGHT_COLORS = {
@@ -101,9 +101,10 @@ public class CaptchaGenerator {
         String[] keys = generateRandomKeys(pairCount);
         int[] values = generateRandomValues(pairCount);
         StringBuilder displayResult = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            int keyIndex = i % keys.length;
-            displayResult.append(keys[keyIndex]);
+        // Real captchas: top length equals pair count (5 or 6), each key
+        // appears exactly once in top. No repetitions.
+        for (int i = 0; i < pairCount; i++) {
+            displayResult.append(keys[i]);
         }
         char[] displayChars = displayResult.toString().toCharArray();
         for (int i = 0; i < displayChars.length; i++) {
