@@ -1,0 +1,137 @@
+/captcha-decoder
+
+Kích hoạt và đọc toàn bộ skill captcha-decoder tại:
+
+C:\Users\nguye\.gemini\config\skills\captcha-decoder\SKILL.md
+
+Đây là batch mới gồm 400 ảnh, không phải tiếp tục manifest 200 ảnh cũ.
+
+NGUỒN ẢNH
+
+C:\Users\nguye\Downloads\images_bgonly
+
+FILE NHÃN CHÍNH
+
+C:\Users\nguye\Downloads\images_bgonly\test_labels.json
+
+CHỌN 400 ẢNH MỚI
+
+1. Đọc và parse test_labels.json hiện tại.
+2. Chỉ xét các file auto_*.png.
+3. Loại toàn bộ filename đã tồn tại trong test_labels.json.
+4. Loại toàn bộ filename nằm trong manifest batch trước:
+
+C:\Users\nguye\Downloads\captcha_batch_200\batch_200_manifest.json
+
+5. Nếu review_labels.json tồn tại, cũng loại các filename trong đó.
+6. Sắp filename còn lại tăng dần theo thứ tự từ điển.
+7. Kiểm tra từng ảnh thực sự đọc được.
+8. Chọn đúng 400 ảnh đọc được đầu tiên.
+9. Không chọn ngẫu nhiên và không dùng lại ảnh của batch trước.
+
+Ghi danh sách cố định vào:
+
+C:\Users\nguye\Downloads\captcha_batch_400\batch_400_manifest.json
+
+Manifest phải chứa đúng 400 filename duy nhất. Sau khi tạo manifest, không được thay đổi danh sách hoặc thứ tự.
+
+XỬ LÝ
+
+- Tuân thủ toàn bộ captcha-decoder skill cho từng ảnh.
+- Dùng scripts/prepare_layers.py.
+- Nhìn residual đã loại line 1 px trước, sau đó locator, cuối cùng mới kiểm tra raw mask.
+- Tách glyph theo màu.
+- Chuẩn hóa xoay trái/phải trên ROI cục bộ.
+- Áp dụng anchor ledger và occlusion map cho mọi glyph.
+- Đọc đủ 5 rules trước khi chốt top.
+- Giữ đúng case trong raw_top_string.
+- Special chỉ gồm #$%&@.
+- Không tạo G/g, I/i, J/j, O/o hoặc Y/y.
+- Nếu còn mơ hồ, chọn best candidate làm dự đoán provisional và ghi candidate thứ hai vào báo cáo review.
+- Không tự gắn reviewed cho kết quả AI.
+
+TỰ ĐỘNG GHI NHÃN
+
+Sau mỗi ảnh, tự động upsert trực tiếp vào:
+
+C:\Users\nguye\Downloads\images_bgonly\test_labels.json
+
+Yêu cầu:
+
+- Không hỏi lại quyền ghi.
+- Không append trùng filename.
+- Không ghi đè record có reviewed: true.
+- Record AI chỉ có filename, raw_top_string, rules và final_output.
+- rules có đúng 5 key.
+- Letter key phải lowercase.
+- Digit value phải là string.
+- final_output phải được tính lại từ raw_top_string và rules.
+- Dùng JSON serializer UTF-8.
+- Ghi qua file tạm rồi atomic replace.
+- Đọc lại và kiểm tra JSON sau mỗi ảnh hoặc batch nhỏ.
+
+CHIA BATCH
+
+- Xử lý theo batch 10 ảnh.
+- Không ghép 400 ảnh vào một grid lớn.
+- Không dừng sau khi lập kế hoạch.
+- Không hỏi xác nhận giữa các batch.
+- Tiếp tục cho đến khi processed_count đúng 400.
+
+Sau mỗi batch, cập nhật:
+
+C:\Users\nguye\Downloads\captcha_batch_400\progress.json
+
+Gồm:
+
+- manifest_count
+- processed_count
+- written_count
+- provisional_count
+- failed_count
+- remaining_count
+- last_processed_filename
+
+Ghi các trường hợp provisional vào:
+
+C:\Users\nguye\Downloads\captcha_batch_400\needs_review_400.md
+
+Với mỗi trường hợp, ghi:
+
+- filename
+- raw_top_string dự đoán
+- rules
+- final_output dự đoán
+- vị trí chưa chắc chắn
+- observed anchors
+- plausibly occluded anchors
+- unexplained missing anchors
+- tối đa hai candidates
+- confidence
+
+Không thêm các dữ kiện review này vào test_labels.json.
+
+KIỂM TRA CUỐI
+
+Chỉ hoàn thành khi:
+
+- manifest_count = 400.
+- processed_count = 400.
+- written_count cộng failed_count = 400.
+- Không filename nào thuộc manifest 200 cũ.
+- Không filename nào đã tồn tại trong test_labels.json tại thời điểm chọn batch.
+- Không có filename trùng trong batch mới.
+- Mọi ảnh thành công có đúng một record trong test_labels.json.
+- Không record AI mới nào chứa reviewed.
+- Mọi final_output đều được tính lại thành công.
+- test_labels.json parse thành công sau lần ghi cuối.
+- Các record cũ và record reviewed được bảo toàn.
+
+Cuối cùng báo cáo ngắn:
+
+- số ảnh đã xử lý;
+- số record đã ghi;
+- số provisional;
+- số lỗi;
+- số record test_labels.json trước và sau;
+- đường dẫn manifest, progress và needs_review.

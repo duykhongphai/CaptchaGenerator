@@ -1,0 +1,197 @@
+[captcha-decoder](slashCommand;captcha-decoder)
+
+Kích hoạt skill captcha-decoder tại:
+C:\Users\nguye\.gemini\config\skills\captcha-decoder\SKILL.md
+
+Trước khi bắt đầu, xác nhận ngắn gọn rằng bạn đã:
+
+1. Nạp và đọc toàn bộ SKILL.md.
+2. Đọc references/labeled-exemplars.md theo hướng dẫn của skill.
+3. Sẽ sử dụng scripts/prepare_layers.py.
+4. Hiểu thứ tự quan sát bắt buộc là residual đã loại line 1 px, locator, rồi mới đến raw mask.
+5. Hiểu special hợp lệ chỉ gồm #$%&@.
+6. Hiểu G/g, I/i, J/j, O/o và Y/y không bao giờ xuất hiện.
+7. Hiểu mọi kết quả phải tự động upsert trực tiếp vào test_labels.json.
+8.Nếu dùng sub agents bắt buộc phải dùng gemini 3.7 flash high
+
+NHIỆM VỤ
+
+Giải đúng 200 ảnh CAPTCHA chưa có nhãn trong:
+
+C:\Users\nguye\Downloads\images_bgonly
+
+File nhãn chính, đồng thời là output bắt buộc:
+
+C:\Users\nguye\Downloads\images_bgonly\test_labels.json
+
+CHỌN ẢNH
+
+- Chỉ xét các file auto_*.png.
+- Đọc test_labels.json trước khi chọn.
+- Loại mọi filename đã tồn tại trong test_labels.json.
+- Nếu review_labels.json tồn tại, cũng loại filename có trong file đó.
+- Sắp các filename còn lại tăng dần theo thứ tự từ điển.
+- Kiểm tra ảnh thực sự đọc được trước khi đưa vào manifest.
+- Chọn đúng 200 ảnh đọc được đầu tiên.
+- Không chọn ngẫu nhiên.
+
+Trước khi giải, ghi danh sách cố định vào:
+
+C:\Users\nguye\Downloads\captcha_batch_200\batch_200_manifest.json
+
+Sau khi manifest được tạo:
+
+- Không thay đổi danh sách 200 ảnh.
+- Không đổi thứ tự.
+- Không thay ảnh khó bằng ảnh khác.
+- Không xử lý ảnh ngoài manifest.
+
+QUY TRÌNH NHẬN DẠNG BẮT BUỘC
+
+Với từng ảnh:
+
+- Tuân thủ toàn bộ captcha-decoder skill.
+- Đọc đủ 5 rules trước khi chốt top.
+- Tách từng lớp màu chính xác.
+- Loại line nhiễu 1 px trước khi thực sự nhìn nhận glyph.
+- Dùng residual làm bằng chứng thị giác chính.
+- Chỉ dùng locator và raw mask sau residual để kiểm chứng hoặc phục hồi nét hợp topology.
+- Không để line tạo stem, bar, slash, bowl hoặc crossing giả.
+- Chuẩn hóa xoay trái/phải trên ROI cục bộ trước khi xét trái/phải, trên/dưới và case.
+- Không mirror, lật hoặc thử xoay 90°/180°.
+- Áp dụng anchor ledger và occlusion map cho mọi chữ và special, không chỉ ví dụ P.
+- Phân biệt observed anchors, plausibly occluded anchors và unexplained missing anchors.
+- So candidate với các exemplar có nhãn phù hợp.
+- Chỉ chọn candidate nằm trong 5 rule keys của ảnh.
+- Không dùng việc một rule chưa xuất hiện để ép gán ký tự.
+- Cho phép ký tự lặp lại.
+- Giữ nguyên case trong raw_top_string.
+- Chỉ lowercase letter key trong rules và khi tính mapping.
+- Không tạo ký tự ngoài alphabet của skill.
+
+GHI TEST_LABELS.JSON
+
+Sau mỗi ảnh giải xong:
+
+- Tạo đúng một record theo schema test_labels.json.
+- Upsert trực tiếp vào:
+  C:\Users\nguye\Downloads\images_bgonly\test_labels.json
+- Không hỏi lại quyền ghi.
+- Không ghi vào một file nhãn thay thế.
+- Không append trùng filename.
+- Record AI tạo ra không được chứa field reviewed.
+- Nếu ảnh còn mơ hồ, vẫn chọn best candidate sau toàn bộ kiểm tra để tạo dự đoán provisional.
+- Candidate thứ hai và lý do không chắc chắn phải ghi vào báo cáo review riêng, không thêm field vào record test_labels.
+- Nếu filename đã có record reviewed: true thì không ghi đè.
+- Dùng JSON serializer UTF-8.
+- Ghi qua file tạm cùng thư mục rồi atomic replace.
+- Đọc lại test_labels.json sau khi ghi.
+- Xác nhận chỉ có một record cho filename.
+- Tính lại final_output từ record vừa đọc.
+
+Mỗi record trong test_labels.json chỉ được có:
+
+- filename
+- raw_top_string
+- rules
+- final_output
+
+Không thêm:
+
+- reviewed
+- confidence
+- candidates
+- angle
+- anchors
+- notes
+- reasoning
+- full_path
+- bất kỳ field phụ nào
+
+Yêu cầu schema:
+
+- filename là basename PNG.
+- raw_top_string dài 5 hoặc 6 và giữ case.
+- rules có đúng 5 key duy nhất.
+- Letter key trong rules phải lowercase.
+- Special key chỉ thuộc #$%&@.
+- Rule digit phải là string.
+- final_output là string digit.
+- final_output dài bằng raw_top_string.
+- Top-level test_labels.json vẫn là JSON array hợp lệ.
+- Giữ nguyên tất cả record cũ không thuộc batch.
+
+BATCH VÀ CHECKPOINT
+
+- Xử lý theo batch 10 ảnh.
+- Không ghép 200 ảnh vào một grid lớn.
+- Sau mỗi ảnh hoặc batch nhỏ phải cập nhật test_labels.json.
+- Sau mỗi batch, cập nhật:
+
+C:\Users\nguye\Downloads\captcha_batch_200\progress.json
+
+progress.json gồm:
+
+- manifest_count
+- processed_count
+- written_count
+- provisional_count
+- failed_count
+- remaining_count
+- last_processed_filename
+
+Ghi báo cáo các trường hợp cần kiểm tra vào:
+
+C:\Users\nguye\Downloads\captcha_batch_200\needs_review_200.md
+
+Mỗi trường hợp provisional cần có:
+
+- filename
+- raw_top_string dự đoán
+- rules
+- final_output dự đoán
+- vị trí chưa chắc chắn
+- góc chuẩn hóa ước lượng
+- observed anchors
+- plausibly occluded anchors
+- unexplained missing anchors
+- tối đa hai candidates
+- confidence
+
+Không đưa các dữ kiện này vào record test_labels.json.
+
+KHẢ NĂNG TIẾP TỤC
+
+- Nếu phiên bị gián đoạn hoặc hết context, đọc lại manifest, progress.json và test_labels.json.
+- Tiếp tục từ filename chưa xử lý đầu tiên.
+- Không tạo manifest mới.
+- Không xử lý lại filename đã hoàn thành.
+- Không dừng sau khi lập kế hoạch.
+- Không hỏi xác nhận giữa các batch.
+- Tiếp tục cho đến khi xử lý đủ 200 ảnh, trừ lỗi hệ thống thật sự không thể tiếp tục.
+
+KIỂM TRA CUỐI
+
+Chỉ hoàn thành khi:
+
+- manifest_count đúng 200.
+- processed_count đúng 200.
+- written_count cộng failed_count đúng 200.
+- Mọi ảnh xử lý thành công có đúng một record trong test_labels.json.
+- Không có filename trùng.
+- Không record AI mới nào chứa reviewed.
+- Mọi record mới có đúng 5 rules.
+- Mọi final_output đều được tính lại thành công.
+- test_labels.json parse được sau lần ghi cuối.
+- Tất cả record cũ được bảo toàn, trừ record unreviewed được upsert đúng filename.
+- Các record reviewed: true không bị thay đổi.
+
+Cuối cùng chỉ báo cáo ngắn:
+
+- tổng số ảnh đã xử lý;
+- số record đã ghi;
+- số provisional;
+- số lỗi;
+- số record test_labels.json trước và sau;
+- đường dẫn manifest, progress và needs_review;
+- lỗi thật sự nếu có.

@@ -1,0 +1,5 @@
+/captcha-decoder
+
+Continue batch hiện tại. Đọc lại toàn bộ captcha-decoder skill, manifest và progress.json của batch đang chạy, rồi đối chiếu test_labels.json.
+
+Tiếp tục từ filename chưa xử lý đầu tiên. Không tạo manifest mới, không xử lý lại ảnh đã hoàn thành, không đổi danh sách và không ghi đè record reviewed. Tiếp tục cho đến khi processed_count đạt đúng số lượng trong manifest.
